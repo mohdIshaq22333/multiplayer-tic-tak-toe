@@ -75,9 +75,10 @@ export default function GameBoard({
         return;
       }
       if (
-        (!tie && !tempBlocks[winningPatterns[i][0]]) ||
-        !tempBlocks[winningPatterns[i][1]] ||
-        !tempBlocks[winningPatterns[i][2]]
+        tie &&
+        (!tempBlocks[winningPatterns[i][0]] ||
+          !tempBlocks[winningPatterns[i][1]] ||
+          !tempBlocks[winningPatterns[i][2]])
       ) {
         tie = false;
       }

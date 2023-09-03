@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose = require("mongoose");
 const gameSchema = new mongoose.Schema({
     gameMap: {
@@ -31,4 +32,4 @@ const gameSchema = new mongoose.Schema({
     timestamps: true,
 });
 const Game = mongoose.models.Game || mongoose.model("Game", gameSchema);
-module.exports = Game;
+exports.default = Game;

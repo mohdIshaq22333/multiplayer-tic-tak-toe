@@ -12,25 +12,97 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express = require("express");
-const http = require("http");
-const app = express();
-const server = http.createServer(app);
-const cron = require("node-cron");
-const Game = require("./modals/game");
-const connectDB = require("./config/db");
+const express_1 = __importDefault(require("express"));
+const http_1 = __importDefault(require("http"));
+const app = (0, express_1.default)();
+const server = http_1.default.createServer(app);
+const node_cron_1 = __importDefault(require("node-cron"));
+const brain_js_1 = require("brain.js");
 const dotenv_1 = __importDefault(require("dotenv"));
+const cors_1 = __importDefault(require("cors"));
+const fs_1 = __importDefault(require("fs"));
+const game_1 = __importDefault(require("./modals/game"));
+const db_1 = __importDefault(require("./config/db"));
 dotenv_1.default.config();
-connectDB();
+(0, db_1.default)();
 const socket_io_1 = require("socket.io");
 const io = new socket_io_1.Server(server, {
     cors: {
         origin: "http://localhost:3000",
     },
 });
+const userNum = {
+    X: 0,
+    O: 1,
+};
+const arryToObj2 = (arr) => {
+    let obj = {};
+    arr.forEach((val, index) => {
+        if (val) {
+            obj["block" + index] = userNum[val];
+        }
+        else {
+            obj["block" + index] = (index + 1) / 10;
+        }
+    });
+    return obj;
+};
+const arryToObj = (arr) => {
+    let obj = {};
+    [...new Array(9)].forEach((val, index) => {
+        obj["block" + index] = arr[index];
+    });
+    return obj;
+};
+app.use(express_1.default.json());
+app.use((0, cors_1.default)({
+    origin: "http://localhost:3000",
+}));
+app.post("/computer-move", function (req, res) {
+    try {
+        const { board } = req.body;
+        const output = net.run(board);
+        console.log("finalll", output);
+        res.status(200).json({ move: Math.round((output === null || output === void 0 ? void 0 : output.move) * 10) });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).json({ error: "Something Went Wrong!" });
+    }
+});
+app.post("/winnerset", function (req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const filePath = "./data/tempData.json";
+            const jsonData = yield fs_1.default.promises.readFile(filePath, "utf-8");
+            let parsedData = JSON.parse(jsonData);
+            if (Array.isArray(parsedData.data)) {
+                parsedData.data = [...parsedData.data, ...req.body.data];
+                const updatedJSON = JSON.stringify(parsedData, null, 2); // 2 spaces for pretty formatting
+                yield fs_1.default.promises.writeFile(filePath, updatedJSON, "utf-8");
+                res.status(200).json({ message: "Data updated successfully" });
+            }
+            else {
+                console.log("Data is not in the expected format.");
+                res.status(400).json({ error: "Bad Request" });
+            }
+        }
+        catch (err) {
+            console.log(err);
+            res.status(500).json({ error: "Something Went Wrong!" });
+        }
+    });
+});
+const net = new brain_js_1.NeuralNetwork({ hiddenLayers: [8] });
+const loadedModelJson = JSON.parse(fs_1.default.readFileSync("./data/trainingData.json", "utf-8"));
+net.train(loadedModelJson === null || loadedModelJson === void 0 ? void 0 : loadedModelJson.data
+//   , {
+//   log: (err) => console.log(err),
+// }
+);
 io.on("connection", (socket) => {
     socket.on("client-ready", () => {
-        socket.broadcast.emit("get-canvas-state");
+        socket.broadcast.emit("get-state");
     });
     socket.on("join-room", (roomId) => {
         socket.join(roomId);
@@ -52,19 +124,24 @@ io.on("connection", (socket) => {
 // removing stale rooms
 function roomsCleanUp() {
     return __awaiter(this, void 0, void 0, function* () {
-        // Calculate the timestamp for 7 days ago
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 1);
-        const timestampThreshold = sevenDaysAgo.getTime();
-        console.log(timestampThreshold);
-        // Define the query object to match records older than 7 days
-        const query = { createdAt: { $lt: timestampThreshold } };
-        // Delete records that match the query
-        yield Game.deleteMany(query);
+        try {
+            // Calculate the timestamp for 7 days ago
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 1);
+            const timestampThreshold = sevenDaysAgo.getTime();
+            console.log(timestampThreshold);
+            // Define the query object to match records older than 7 days
+            const query = { createdAt: { $lt: timestampThreshold } };
+            // Delete records that match the query
+            yield game_1.default.deleteMany(query);
+        }
+        catch (err) {
+            console.log(err);
+        }
     });
 }
 // cronjobs
-cron.schedule("0 0 */3 * *", () => {
+node_cron_1.default.schedule("0 0 */3 * *", () => {
     roomsCleanUp();
 }, {
     scheduled: true,
