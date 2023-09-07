@@ -16,7 +16,7 @@ connectDB();
 import { Server, Socket } from "socket.io";
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "http://localhost:3002",
   },
 });
 const userNum = {
@@ -43,16 +43,44 @@ const arryToObj = (arr: Number[]) => {
   return obj;
 };
 
+const net = new NeuralNetwork({ hiddenLayers: [15, 9, 4] });
+async function trainNeuralNetwork() {
+  try {
+    const loadedModelJson = JSON.parse(
+      fs.readFileSync("./data/trainingData.json", "utf-8")
+    );
+    const status = net.train(loadedModelJson?.data);
+    console.log("Neural network training status--:", status);
+  } catch (error) {
+    console.error("Error during neural network training:", error);
+  }
+}
+// const loadedModelJson = JSON.parse(
+//   fs.readFileSync("./data/trainingData.json", "utf-8")
+// );
+// const status = net.train(
+//   loadedModelJson?.data
+//   //   , {
+//   //   log: (err) => console.log(err),
+//   // }
+// );
+// console.log("loadedModelJson", loadedModelJson?.data?.length);
+// console.log("status", status);
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: "http://localhost:3002",
   })
 );
+app.use(express.urlencoded({ extended: false }));
+
 app.post("/computer-move", function (req: Request, res: Response) {
+  // return res.status(200).json({ move: 1 });
+
   try {
     const { board }: { board: number[] } = req.body;
     const output: any = net.run(board);
+    console.count("finalll");
     console.log("finalll", output);
     res.status(200).json({ move: Math.round(output?.move * 10) });
   } catch (err) {
@@ -74,21 +102,13 @@ app.post("/winnerset", async function (req: Request, res: Response) {
       console.log("Data is not in the expected format.");
       res.status(400).json({ error: "Bad Request" });
     }
+    res.end();
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "Something Went Wrong!" });
   }
+  res.end();
 });
-const net = new NeuralNetwork({ hiddenLayers: [8] });
-const loadedModelJson = JSON.parse(
-  fs.readFileSync("./data/trainingData.json", "utf-8")
-);
-net.train(
-  loadedModelJson?.data
-  //   , {
-  //   log: (err) => console.log(err),
-  // }
-);
 
 // const output: any = net.run({
 //   block0: 0.1,
@@ -164,6 +184,7 @@ cron.schedule(
   }
 );
 
+setTimeout(trainNeuralNetwork, 1000);
 server.listen(3001, () => {
   console.log("✔️ Server listening on port 3001");
 });

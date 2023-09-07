@@ -85,30 +85,7 @@ export default function GameBoard() {
     setActivePlayer("X");
     setWinningSet([]);
   };
-  const handleComputerMove = async ({
-    currentBlocks,
-  }: {
-    currentBlocks: Block[];
-  }) => {
-    const response = await axios.post("http://localhost:3001/computer-move", {
-      board: { ...arryToObj2(currentBlocks) },
-    });
-    console.log("response", response);
-    const wrongMove: boolean = moveChecker(response?.data?.move - 1);
-    console.log("wrongMove", wrongMove);
-    if (
-      wrongMove ||
-      (response?.data?.move &&
-        (blocks?.[response?.data?.move - 1] ||
-          response?.data?.move === 0 ||
-          response?.data?.move === 10))
-    ) {
-      setCorrection(true);
-      console.log("Correction+++", correction);
-    } else if (response?.data?.move) {
-      handleMove({ num: response?.data?.move - 1 });
-    }
-  };
+
   console.log("Correction", correction);
   type Block = "" | "X" | "O";
   const arryToObj2 = (arr: Block[]) => {
@@ -208,11 +185,36 @@ export default function GameBoard() {
       setUser2([]);
     }
   }, [user1, user2, gameStatus]);
-  useEffect(() => {
-    if (activePlayer === "O") {
-      handleComputerMove({ currentBlocks: blocks });
+  const handleComputerMove = async ({
+    currentBlocks,
+  }: {
+    currentBlocks: Block[];
+  }) => {
+    const response = await axios
+      .post(`http://localhost:3001/computer-move`, {
+        board: { ...arryToObj2(currentBlocks) },
+      })
+      .catch((err) => console.log("errrrrr", err));
+    const wrongMove: boolean = moveChecker(response?.data?.move - 1);
+    if (
+      wrongMove ||
+      (response?.data?.move &&
+        (blocks?.[response?.data?.move - 1] ||
+          response?.data?.move === 0 ||
+          response?.data?.move === 10))
+    ) {
+      setCorrection(true);
+      console.log("Correction+++", correction);
+    } else if (response?.data?.move) {
+      handleMove({ num: response?.data?.move - 1 });
     }
+  };
+  useEffect(() => {
+    // if (activePlayer === "O") {
+    handleComputerMove({ currentBlocks: blocks });
+    // }
   }, [activePlayer]);
+
   //   useEffect(() => {
   //     if (gameData?.gameMap) {
   //       socket.emit("client-ready");
