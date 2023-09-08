@@ -42,14 +42,38 @@ const arryToObj = (arr: Number[]) => {
   });
   return obj;
 };
-
-const net = new NeuralNetwork({ hiddenLayers: [15, 9, 4] });
+// [20, 16, 8, 4]
+// [15, 9]=0.02192588363173036=2000 iterations
+const net = new NeuralNetwork({ hiddenLayers: [27, 18, 18], iterations: 6000 });
+// 0.0163... =[18, 10, 5,3]=10000 iterations
+// 0.01651041420724989 =[27, 18, 18]
+// 0.016993320811456564 =[18, 18, 18]
+// 0.0167528135890492 =[18, 18, 9]
+// 0.01789833920854192=[18, 9, 9]
+// 0.016991432774402265 =[18, 10, 5,3]
+// 0.01730309931532406 =[18, 10, 5]
+// 0.019470191368529302 =[15, 8, 4]
+// 0.01910969505990482 =[15, 8, 4, 2]
 async function trainNeuralNetwork() {
   try {
+    // ****train and create model****//
     const loadedModelJson = JSON.parse(
       fs.readFileSync("./data/trainingData.json", "utf-8")
     );
-    const status = net.train(loadedModelJson?.data);
+    const status = net.train(loadedModelJson?.data, {
+      log: (err) => console.log(err),
+    });
+    const json = net.toJSON();
+    fs.writeFileSync("./data/trained-model.json", JSON.stringify(json));
+    // ****till here****//
+
+    // ****train with existed model****//
+    // const json = JSON.parse(
+    //   fs.readFileSync("./data/trained-model.json", "utf-8")
+    // );
+    // const status = net.fromJSON(json);
+    // ****till here****//
+
     console.log("Neural network training status--:", status);
   } catch (error) {
     console.error("Error during neural network training:", error);

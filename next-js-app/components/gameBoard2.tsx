@@ -210,9 +210,9 @@ export default function GameBoard() {
     }
   };
   useEffect(() => {
-    // if (activePlayer === "O") {
-    handleComputerMove({ currentBlocks: blocks });
-    // }
+    if (activePlayer === "O") {
+      handleComputerMove({ currentBlocks: blocks });
+    }
   }, [activePlayer]);
 
   //   useEffect(() => {
